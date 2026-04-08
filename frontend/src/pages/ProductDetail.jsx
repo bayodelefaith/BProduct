@@ -78,12 +78,31 @@ export default function ProductDetail() {
           <div className="flex items-center gap-3">
             <div className="flex items-center border border-[#e8e2d8] rounded-xl overflow-hidden">
               <button
-                onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                onClick={() => setQuantity(q => Math.max(1, (typeof q === 'number' ? q : 1) - 1))}
                 className="px-4 py-3 text-[#8a8780] hover:bg-[#f0ebe1] transition-colors"
               >−</button>
-              <span className="px-4 py-3 font-medium text-sm">{quantity}</span>
+              <input
+                type="number"
+                min="1"
+                max={product.quantity}
+                value={quantity}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (e.target.value === "") {
+                    setQuantity("");
+                  } else if (!isNaN(val)) {
+                    setQuantity(Math.min(product.quantity, Math.max(1, val)));
+                  }
+                }}
+                onBlur={() => {
+                  if (quantity === "" || isNaN(quantity) || quantity < 1) {
+                    setQuantity(1);
+                  }
+                }}
+                className="w-16 text-center py-3 font-medium text-sm outline-none bg-transparent [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+              />
               <button
-                onClick={() => setQuantity(q => Math.min(product.quantity, q + 1))}
+                onClick={() => setQuantity(q => Math.min(product.quantity, (typeof q === 'number' ? q : 1) + 1))}
                 className="px-4 py-3 text-[#8a8780] hover:bg-[#f0ebe1] transition-colors"
               >+</button>
             </div>

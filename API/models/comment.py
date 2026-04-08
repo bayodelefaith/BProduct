@@ -19,7 +19,7 @@ class Comment(SQLModel, table=True):
 
 class CommentCreate(SQLModel):
     content: str
-    post_id: int
+    post_id: Optional[int] = None
 
 class CommentRead(SQLModel):
     id: int

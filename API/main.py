@@ -6,20 +6,24 @@ from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, F
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import select
 from jose import JWTError, jwt
+from dotenv import load_dotenv
 
 from typing import Optional
 from models.user import User, UserCreate, UserRead, UserUpdate, Token, SessionDep, create_db_and_tables
-from models.post import Post, PostCreate, PostRead
+from models.admin import Admin, AdminCreate, AdminRead
+from models.post import Post, PostCreate, PostRead, PostUpdate
 from models.product import Product, ProductCreate, ProductRead
 from models.order import Order, OrderCreate, OrderRead, OrderItem, OrderItemCreate, OrderItemRead
 from models.review import Review, ReviewCreate, ReviewRead
 from models.comment import Comment, CommentCreate, CommentRead
-from auth import hash_password, authenticate_user, create_access_token, SECRET_KEY, ALGORITHM
+from auth import hash_password, authenticate_user, authenticate_admin, create_access_token, SECRET_KEY, ALGORITHM
 from models.cart import CartItem, CartItemCreate, CartItemRead, CartItemUpdate
 
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv()
 
 
 
@@ -28,7 +32,7 @@ UPLOAD_DIR = "uploads"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
+    # create_db_and_tables()  # Disabled: Alembic handles database migrations now
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     yield
 
@@ -42,7 +46,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,16 +82,37 @@ def get_current_user(
 
 @app.post("/register", response_model=UserRead)
 def register(user: UserCreate, session: SessionDep):
-    hashed_pw = hash_password(user.password)
-    db_user = User(
-        name=user.name,
-        email=user.email,
-        hashed_password=hashed_pw
-    )
-    session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
-    return db_user
+    try:
+        # Check if email already exists
+        existing_user = session.exec(
+            select(User).where(User.email == user.email)
+        ).first()
+        
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        hashed_pw = hash_password(user.password)
+        db_user = User(
+            name=user.name,
+            email=user.email,
+            hashed_password=hashed_pw
+        )
+        session.add(db_user)
+        session.commit()
+        session.refresh(db_user)
+        return db_user
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        print(f"Registration error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
 
 
 @app.post("/login", response_model=Token)
@@ -146,6 +171,29 @@ def get_post(post_id: int, session: SessionDep):
     post = session.get(Post, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
+    return post
+
+
+@app.put("/posts/{post_id}", response_model=PostRead)
+def update_post(
+    post_id: int,
+    update_data: PostUpdate,
+    session: SessionDep,
+    current_user: User = Depends(get_current_user)
+):
+    post = session.get(Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this post")
+
+    if update_data.title is not None: post.title = update_data.title
+    if update_data.content is not None: post.content = update_data.content
+    if update_data.category is not None: post.category = update_data.category
+
+    session.add(post)
+    session.commit()
+    session.refresh(post)
     return post
 
 
@@ -301,6 +349,8 @@ def add_to_cart(
     product = session.get(Product, item.product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    if item.quantity < 1:
+        raise HTTPException(status_code=400, detail="Quantity must be at least 1")
     if item.quantity > product.quantity:
         raise HTTPException(status_code=400, detail="Not enough stock")
 
@@ -312,6 +362,8 @@ def add_to_cart(
     existing = session.exec(statement).first()
 
     if existing:
+        if existing.quantity + item.quantity > product.quantity:
+            raise HTTPException(status_code=400, detail="Not enough stock to add more to cart")
         existing.quantity += item.quantity
         session.add(existing)
         session.commit()
@@ -347,6 +399,9 @@ def update_cart_item(
         raise HTTPException(status_code=404, detail="Cart item not found")
     if cart_item.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
+
+    if update.quantity < 1:
+        raise HTTPException(status_code=400, detail="Quantity must be at least 1")
 
     product = session.get(Product, cart_item.product_id)
     if update.quantity > product.quantity:

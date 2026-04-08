@@ -16,6 +16,11 @@ export default function Cart() {
     onSuccess: () => queryClient.invalidateQueries(["cart"]),
   })
 
+  const updateQuantity = useMutation({
+    mutationFn: ({ id, quantity }) => api.put(`/cart/${id}`, { quantity }),
+    onSuccess: () => queryClient.invalidateQueries(["cart"]),
+  })
+
   const clear = useMutation({
     mutationFn: () => api.delete("/cart/"),
     onSuccess: () => queryClient.invalidateQueries(["cart"]),
@@ -75,7 +80,26 @@ export default function Cart() {
             >
               <div>
                 <p className="font-medium text-[#1a1a18]">{product?.name || `Product #${item.product_id}`}</p>
-                <p className="text-sm text-[#8a8780] mt-0.5">Qty: {item.quantity} {product ? `• $${product.price * item.quantity}` : ''}</p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center border border-[#e8e2d8] rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => {
+                        if (item.quantity > 1) updateQuantity.mutate({ id: item.id, quantity: item.quantity - 1 })
+                      }}
+                      disabled={updateQuantity.isPending}
+                      className="px-2.5 py-1 text-[#8a8780] hover:bg-[#f0ebe1] transition-colors disabled:opacity-50"
+                    >−</button>
+                    <span className="px-3 py-1 font-medium text-xs text-center min-w-[2rem]">{item.quantity}</span>
+                    <button
+                      onClick={() => {
+                        if (product && item.quantity < product.quantity) updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 })
+                      }}
+                      disabled={updateQuantity.isPending || (product && item.quantity >= product.quantity)}
+                      className="px-2.5 py-1 text-[#8a8780] hover:bg-[#f0ebe1] transition-colors disabled:opacity-50"
+                    >+</button>
+                  </div>
+                  <span className="text-sm text-[#8a8780]">{product ? `• $${product.price * item.quantity}` : ''}</span>
+                </div>
               </div>
               <button
                 onClick={() => remove.mutate(item.id)}

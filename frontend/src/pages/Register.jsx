@@ -13,10 +13,13 @@ export default function Register() {
     setError("")
     setLoading(true)
     try {
-      await api.post("/register", form)
+      const response = await api.post("/register", form)
+      console.log("Registration successful:", response.data)
       navigate("/login")
-    } catch {
-      setError("Registration failed. Email may already be in use.")
+    } catch (err) {
+      console.error("Registration error:", err.response?.data || err.message)
+      const errorMessage = err.response?.data?.detail || err.message || "Registration failed. Please try again."
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

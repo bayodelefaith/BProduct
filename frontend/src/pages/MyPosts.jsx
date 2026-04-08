@@ -6,6 +6,9 @@ export default function MyPosts() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState({ title: "", content: "" })
   const [open, setOpen] = useState(false)
+  
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ title: "", content: "" })
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["my-posts"],
@@ -22,6 +25,14 @@ export default function MyPosts() {
       queryClient.invalidateQueries(["my-posts"])
       setForm({ title: "", content: "" })
       setOpen(false)
+    },
+  })
+
+  const update = useMutation({
+    mutationFn: ({ id, data }) => api.put(`/posts/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["my-posts"])
+      setEditingId(null)
     },
   })
 
@@ -91,18 +102,66 @@ export default function MyPosts() {
             key={post.id}
             className={`group bg-white border border-[#e8e2d8] rounded-2xl p-6 hover:border-[#c8622a]/30 transition-colors fade-up delay-${Math.min(i + 1, 3)}`}
           >
-            <div className="flex justify-between items-start gap-4">
-              <div>
-                <h2 className="font-semibold text-lg mb-1">{post.title}</h2>
-                <p className="text-[#8a8780] text-sm leading-relaxed">{post.content}</p>
+            {editingId === post.id ? (
+              <div className="flex flex-col gap-3">
+                <input
+                  className="border border-[#e8e2d8] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#c8622a] focus:ring-2 focus:ring-[#c8622a]/10 transition"
+                  value={editForm.title}
+                  onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                />
+                <textarea
+                  className="border border-[#e8e2d8] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#c8622a] focus:ring-2 focus:ring-[#c8622a]/10 transition resize-none"
+                  rows={4}
+                  value={editForm.content}
+                  onChange={e => setEditForm(prev => ({ ...prev, content: e.target.value }))}
+                />
+                <div className="flex gap-2 justify-end mt-2">
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="text-sm font-medium text-[#8a8780] hover:text-[#1a1a18] px-4 py-2 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => update.mutate({ id: post.id, data: editForm })}
+                    disabled={!editForm.title || !editForm.content}
+                    className="bg-[#c8622a] text-[#faf8f4] px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#a65020] transition disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => remove.mutate(post.id)}
-                className="opacity-0 group-hover:opacity-100 text-xs text-[#8a8780] hover:text-red-500 transition-all px-2 py-1 rounded-lg hover:bg-red-50 shrink-0"
-              >
-                Delete
-              </button>
-            </div>
+            ) : (
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
+                  <h2 className="font-semibold text-lg mb-1">{post.title}</h2>
+                  <p className="text-[#8a8780] text-sm leading-relaxed">
+                    {post.content?.length > 120 ? `${post.content.substring(0, 120)}...` : post.content}
+                  </p>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 flex gap-2 transition-all shrink-0">
+                  <button
+                    onClick={() => {
+                      setEditingId(post.id)
+                      setEditForm({ title: post.title, content: post.content })
+                    }}
+                    className="text-xs text-[#8a8780] hover:text-[#c8622a] px-2 py-1 rounded-lg hover:bg-orange-50 transition"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this post?")) {
+                        remove.mutate(post.id)
+                      }
+                    }}
+                    className="text-xs text-[#8a8780] hover:text-red-500 px-2 py-1 rounded-lg hover:bg-red-50 transition"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

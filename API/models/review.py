@@ -21,7 +21,7 @@ class Review(SQLModel, table=True):
 class ReviewCreate(SQLModel):
     rating: int
     comment: Optional[str] = None
-    product_id: int
+    product_id: Optional[int] = None
 
 class ReviewRead(SQLModel):
     id: int

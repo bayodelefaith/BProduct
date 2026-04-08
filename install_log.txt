@@ -1,0 +1,54 @@
+Starting installation... 
+[BACKEND] 
+
+up to date, audited 121 packages in 8s
+
+22 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+Prisma schema loaded from prisma\schema.prisma
+Environment variables loaded from .env
+Datasource "db": SQLite database "database.db" at "file:../../API/database.db"
+
+- Introspecting based on datasource defined in prisma\schema.prisma
+√ Introspected 10 models and wrote them into prisma\schema.prisma in 151ms
+      
+Run prisma generate to generate Prisma Client.
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 392ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Curious about the SQL queries Prisma ORM generates? Optimize helps you enhance your visibility: https://pris.ly/tip-2-optimize
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 5.22.0 -> 7.7.0                       │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+[FRONTEND] 
+
+changed 1 package, and audited 164 packages in 11s
+
+32 packages are looking for funding
+  run `npm fund` for details
+
+4 vulnerabilities (2 moderate, 2 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+Done! 

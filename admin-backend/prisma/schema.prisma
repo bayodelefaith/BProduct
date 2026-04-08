@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id              Int       @id @default(autoincrement())
+  email           String    @unique(map: "sqlite_autoindex_Admin_1")
+  name            String
+  hashed_password String
+  created_at      String?
+}
+
+model alembic_version {
+  version_num String @id
+}
+
+model cartitem {
+  id         Int      @id @default(autoincrement())
+  quantity   Int
+  user_id    Int?
+  product_id Int?
+  user       user?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product    product? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model comment {
+  id         Int      @id @default(autoincrement())
+  content    String
+  created_at String
+  user_id    Int?
+  post_id    Int?
+  user       user?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  post       post?    @relation(fields: [post_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model order {
+  id          Int         @id @default(autoincrement())
+  user_id     Int?
+  total_price Float
+  status      String
+  created_at  String
+  user        user?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orderitem   orderitem[]
+}
+
+model orderitem {
+  id         Int      @id @default(autoincrement())
+  order_id   Int?
+  product_id Int?
+  quantity   Int
+  price      Float
+  product    product? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order      order?   @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model post {
+  id       Int       @id @default(autoincrement())
+  title    String
+  content  String
+  category String?
+  likes    Int
+  user_id  Int?
+  comment  comment[]
+  user     user?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  quantity    Int
+  image_path  String
+  category    String?
+  user_id     Int?
+  cartitem    cartitem[]
+  orderitem   orderitem[]
+  user        user?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  review      review[]
+}
+
+model review {
+  id         Int      @id @default(autoincrement())
+  rating     Int
+  comment    String?
+  created_at String
+  user_id    Int?
+  product_id Int?
+  user       user?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product    product? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user {
+  id              Int        @id @default(autoincrement())
+  name            String
+  email           String     @unique(map: "ix_user_email")
+  hashed_password String
+  is_admin        Boolean
+  bio             String?
+  avatar_url      String?
+  cartitem        cartitem[]
+  comment         comment[]
+  order           order[]
+  post            post[]
+  product         product[]
+  review          review[]
+}

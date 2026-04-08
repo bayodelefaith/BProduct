@@ -29,3 +29,8 @@ class PostRead(SQLModel):
     category: Optional[str]
     likes: int
     user_id: Optional[int]
+
+class PostUpdate(SQLModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    category: Optional[str] = None
